@@ -7,13 +7,13 @@ const PHOTO_PX = {
   h: Math.round((PHOTO_CM.h / CM_PER_IN) * DPI),
 };
 
-const PRINT_IN = { w: 6, h: 4 }; // horizontal 4x6
+const PRINT_IN = { w: 4, h: 6 }; // vertical 4x6
 const SHEET_PX = {
   w: Math.round(PRINT_IN.w * DPI),
   h: Math.round(PRINT_IN.h * DPI),
 };
 
-const GRID = { cols: 4, rows: 2, count: 8 };
+const GRID = { cols: 2, rows: 4, count: 8 };
 const GAP_PX = Math.round(0.12 * DPI);
 const MIN_CROP = 40;
 
@@ -96,7 +96,7 @@ function resetState() {
   state.dragMode = null;
   state.dragHandle = null;
   drawEditor();
-  drawPlaceholder('Prime Photos — 6×4 Preview', 'Upload an image to begin');
+  drawPlaceholder('Prime Photos — 4×6 Portrait Preview', 'Upload an image to begin');
 }
 
 function applyColorBalance(ctx, width, height, red, green, blue) {
@@ -306,7 +306,7 @@ function makePassportTile() {
 function generateSheet() {
   const tile = makePassportTile();
   if (!tile) {
-    drawPlaceholder('Prime Photos — 6×4 Preview', 'Upload an image to begin');
+    drawPlaceholder('Prime Photos — 4×6 Portrait Preview', 'Upload an image to begin');
     return;
   }
 
@@ -314,8 +314,10 @@ function generateSheet() {
   sctx.fillStyle = '#ffffff';
   sctx.fillRect(0, 0, sheetCanvas.width, sheetCanvas.height);
 
-  const totalW = GRID.cols * PHOTO_PX.w + (GRID.cols - 1) * GAP_PX;
-  const totalH = GRID.rows * PHOTO_PX.h + (GRID.rows - 1) * GAP_PX;
+  const rotatedW = PHOTO_PX.h;
+  const rotatedH = PHOTO_PX.w;
+  const totalW = GRID.cols * rotatedW + (GRID.cols - 1) * GAP_PX;
+  const totalH = GRID.rows * rotatedH + (GRID.rows - 1) * GAP_PX;
   const startX = (sheetCanvas.width - totalW) / 2;
   const startY = (sheetCanvas.height - totalH) / 2;
 
@@ -323,12 +325,18 @@ function generateSheet() {
   for (let r = 0; r < GRID.rows; r += 1) {
     for (let c = 0; c < GRID.cols; c += 1) {
       if (placed >= GRID.count) break;
-      const x = startX + c * (PHOTO_PX.w + GAP_PX);
-      const y = startY + r * (PHOTO_PX.h + GAP_PX);
-      sctx.drawImage(tile, x, y, PHOTO_PX.w, PHOTO_PX.h);
+      const x = startX + c * (rotatedW + GAP_PX);
+      const y = startY + r * (rotatedH + GAP_PX);
+
+      sctx.save();
+      sctx.translate(x, y);
+      sctx.rotate(Math.PI / 2);
+      sctx.drawImage(tile, 0, -rotatedW, rotatedH, rotatedW);
+      sctx.restore();
+
       sctx.strokeStyle = '#6d7fa8';
       sctx.lineWidth = 1;
-      sctx.strokeRect(x, y, PHOTO_PX.w, PHOTO_PX.h);
+      sctx.strokeRect(x, y, rotatedW, rotatedH);
       placed += 1;
     }
   }
@@ -338,7 +346,7 @@ function download(type) {
   const ext = type === 'image/png' ? 'png' : 'jpg';
   const anchor = document.createElement('a');
   anchor.href = sheetCanvas.toDataURL(type, 0.97);
-  anchor.download = `prime-photos-passport-6x4.${ext}`;
+  anchor.download = `prime-photos-passport-4x6-portrait.${ext}`;
   anchor.click();
 }
 
